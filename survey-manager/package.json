@@ -1,6 +1,6 @@
 {
   "name": "survey-manager",
-  "version": "0.7.0",
+  "version": "1.1.4",
   "license": "MIT",
   "engines": {
     "node": ">=20.0.0",
@@ -13,6 +13,7 @@
   "packageManager": "yarn@4.9.2",
   "scripts": {
     "twenty": "node node_modules/twenty-sdk/dist/cli.cjs",
+    "deploy": "node node_modules/twenty-sdk/dist/cli.cjs deploy && node node_modules/twenty-sdk/dist/cli.cjs install",
     "lint": "oxlint -c .oxlintrc.json .",
     "lint:fix": "oxlint --fix -c .oxlintrc.json .",
     "test": "vitest run",
