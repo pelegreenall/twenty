@@ -1,0 +1,39 @@
+{
+  "name": "survey-manager",
+  "version": "0.7.0",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": "please-use-yarn",
+    "yarn": ">=4.0.2"
+  },
+  "keywords": [
+    "twenty-app"
+  ],
+  "packageManager": "yarn@4.9.2",
+  "scripts": {
+    "twenty": "node node_modules/twenty-sdk/dist/cli.cjs",
+    "lint": "oxlint -c .oxlintrc.json .",
+    "lint:fix": "oxlint --fix -c .oxlintrc.json .",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "preact": "^10.29.1",
+    "survey-core": "^2.5.20",
+    "survey-creator-react": "^2.5.20",
+    "survey-react-ui": "^2.5.20",
+    "twenty-client-sdk": "link:../packages/twenty-client-sdk",
+    "twenty-sdk": "link:../packages/twenty-sdk"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "@types/react": "^19.0.0",
+    "oxlint": "^0.16.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.9.3",
+    "vite-tsconfig-paths": "^4.2.1",
+    "vitest": "^3.1.1"
+  }
+}

@@ -1,0 +1,4 @@
+Installing application...
+App path: /home/peleg/Documents/Github/twenty/survey-manager
+
+✓ Application installed
