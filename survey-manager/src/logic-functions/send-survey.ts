@@ -5,6 +5,10 @@ import { DistributionStatus } from '../objects/distribution';
 export const SEND_SURVEY_FUNCTION_ID = 'd7bcbea5-baad-400d-8000-000000000006';
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
+// Sender must be a Brevo-verified address or domain.
+// Set BREVO_SENDER_EMAIL in your Twenty server .env (restart required after adding).
+const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || '';
+const BREVO_SENDER_NAME = process.env.BREVO_SENDER_NAME || 'Survey';
 // The Twenty server URL — used to build the survey link
 const TWENTY_API_URL = process.env.TWENTY_API_URL || 'http://localhost:3000';
 
@@ -18,6 +22,12 @@ const generateToken = (): string => {
 };
 
 export const handler = async ({ distributionId }: { distributionId: string }) => {
+  if (!BREVO_API_KEY) {
+    throw new Error(
+      'BREVO_API_KEY is not configured. Add it to your Twenty server .env and restart the server.',
+    );
+  }
+
   const client = new CoreApiClient();
 
   // 1. Fetch distribution with related person and survey
@@ -52,7 +62,7 @@ export const handler = async ({ distributionId }: { distributionId: string }) =>
   if (!token) {
     token = generateToken();
     await client.mutation({
-      updateOneSm133788Distribution: {
+      updateSm133788Distribution: {
         __args: {
           id: distribution.id,
           data: { token } as any,
@@ -71,7 +81,7 @@ export const handler = async ({ distributionId }: { distributionId: string }) =>
 
   // 4. Send email via Brevo
   const emailPayload = {
-    sender: { name: 'Twenty CRM', email: 'noreply@twenty.com' },
+    sender: { name: BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
     to: [
       {
         email,
@@ -138,7 +148,7 @@ export const handler = async ({ distributionId }: { distributionId: string }) =>
 
   // 5. Update distribution status to SENT
   await client.mutation({
-    updateOneSm133788Distribution: {
+    updateSm133788Distribution: {
       __args: {
         id: distribution.id,
         data: { status: DistributionStatus.SENT } as any,

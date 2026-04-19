@@ -38,7 +38,7 @@ export const handler = async (event: Record<string, any>) => {
 
   // 2. Create Response record
   await client.mutation({
-    createOneSm133788Response: {
+    createSm133788Response: {
       __args: {
         data: {
           answersJson: JSON.stringify(answers ?? {}),
@@ -51,7 +51,7 @@ export const handler = async (event: Record<string, any>) => {
 
   // 3. Update distribution status to COMPLETED
   await client.mutation({
-    updateOneSm133788Distribution: {
+    updateSm133788Distribution: {
       __args: {
         id: distribution.id,
         data: { status: DistributionStatus.COMPLETED } as any,

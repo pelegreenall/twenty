@@ -1,6 +1,6 @@
 {
   "name": "survey-manager",
-  "version": "1.1.4",
+  "version": "1.2.1",
   "license": "MIT",
   "engines": {
     "node": ">=20.0.0",
@@ -13,7 +13,7 @@
   "packageManager": "yarn@4.9.2",
   "scripts": {
     "twenty": "node node_modules/twenty-sdk/dist/cli.cjs",
-    "deploy": "node node_modules/twenty-sdk/dist/cli.cjs deploy && node node_modules/twenty-sdk/dist/cli.cjs install",
+    "deploy": "node node_modules/twenty-sdk/dist/cli.cjs deploy && node node_modules/twenty-sdk/dist/cli.cjs install && npx redis-cli -h localhost -p 6379 DEL engine:workspace:flat-maps:logic-function:f45a8a02-3037-4eb3-8757-30a4e428d330:hash engine:workspace:flat-maps:logic-function:f45a8a02-3037-4eb3-8757-30a4e428d330:data engine:workspace:flat-maps:front-component:f45a8a02-3037-4eb3-8757-30a4e428d330:hash engine:workspace:flat-maps:front-component:f45a8a02-3037-4eb3-8757-30a4e428d330:data || true",
     "lint": "oxlint -c .oxlintrc.json .",
     "lint:fix": "oxlint --fix -c .oxlintrc.json .",
     "test": "vitest run",

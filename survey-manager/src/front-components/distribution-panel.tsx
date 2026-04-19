@@ -75,6 +75,7 @@ const DistributionPanel = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);
   const [sending, setSending] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendFnId, setSendFnId] = useState<string | null>(null);
 
@@ -184,7 +185,7 @@ const DistributionPanel = () => {
     setAdding(person.id);
     try {
       const result = await coreApiClient.mutation({
-        createOneSm133788Distribution: {
+        createSm133788Distribution: {
           __args: {
             data: {
               status: 'PENDING',
@@ -202,7 +203,7 @@ const DistributionPanel = () => {
           },
         },
       } as never);
-      const newDist = (result as any)?.createOneSm133788Distribution;
+      const newDist = (result as any)?.createSm133788Distribution;
       if (newDist) {
         setDistributions((prev) => [newDist, ...prev]);
       }
@@ -231,11 +232,14 @@ const DistributionPanel = () => {
         },
       } as any);
       const execResult = (result as any)?.executeOneLogicFunction;
-      if (execResult?.error) throw new Error(String(execResult.error));
+      if (execResult?.error) {
+        const e = execResult.error;
+        throw new Error(typeof e === 'string' ? e : e?.message ?? e?.errorMessage ?? JSON.stringify(e));
+      }
       await fetchDistributions();
     } catch (err) {
       console.error('[DistributionPanel] send error:', err);
-      setSendError(String(err));
+      setSendError(err instanceof Error ? err.message : JSON.stringify(err));
     } finally {
       setSending(null);
     }
@@ -247,6 +251,25 @@ const DistributionPanel = () => {
     const pending = distributions.filter((d) => d.status === 'PENDING');
     for (const d of pending) {
       await sendDist(d.id);
+    }
+  };
+
+  // ── Delete distribution ────────────────────────────────────────────────────
+
+  const deleteDist = async (id: string) => {
+    setDeleting(id);
+    try {
+      await coreApiClient.mutation({
+        deleteSm133788Distribution: {
+          __args: { id },
+          id: true,
+        },
+      } as never);
+      setDistributions((prev) => prev.filter((d) => d.id !== id));
+    } catch (err) {
+      console.error('[DistributionPanel] delete error:', err);
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -324,6 +347,11 @@ const DistributionPanel = () => {
       color: active ? T.textInverted : T.textLight,
       flexShrink: 0,
     }),
+    deleteBtn: {
+      padding: '4px 8px', background: 'none', border: `1px solid ${T.borderLight}`,
+      borderRadius: '5px', fontSize: '13px', color: T.textLight,
+      cursor: 'pointer', flexShrink: 0, lineHeight: 1,
+    },
     empty: {
       padding: '24px', textAlign: 'center' as const, color: T.textLight,
       fontSize: '13px', lineHeight: '1.6',
@@ -436,6 +464,14 @@ const DistributionPanel = () => {
                         : 'Send'}
                   </button>
                 )}
+                <button
+                  style={S.deleteBtn}
+                  disabled={deleting === d.id}
+                  onClick={() => deleteDist(d.id)}
+                  title="Remove"
+                >
+                  {deleting === d.id ? '…' : '✕'}
+                </button>
               </div>
             );
           })

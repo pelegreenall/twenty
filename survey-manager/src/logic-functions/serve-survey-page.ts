@@ -89,8 +89,10 @@ export const handler = async (event: Record<string, any>) => {
 <div class="wrap" id="wrap">
   <div id="survey"></div>
 </div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/survey-core@2.5.20/survey.core.min.js"></script>
-<script src="https://unpkg.com/survey-js-ui@2.5.20/survey-js-ui.min.js"></script>
+<script src="https://unpkg.com/survey-react-ui@2.5.20/survey-react-ui.min.js"></script>
 <script>
 (function(){
   var token = ${safeToken};
@@ -111,21 +113,19 @@ export const handler = async (event: Record<string, any>) => {
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({token:token, answers:sender.data})
       }).then(function(r){
-        if(r.ok){
-          showMsg('ok','✓ Thank you!','Your response has been recorded successfully.');
-        } else {
-          r.text().then(function(t){
-            showMsg('err','Submission failed',t||'Please try again.');
-          });
-        }
-      }).catch(function(e){
+        return r.ok
+          ? showMsg('ok','✓ Thank you!','Your response has been recorded successfully.')
+          : r.text().then(function(t){ showMsg('err','Submission failed',t||'Please try again.'); });
+      }).catch(function(){
         showMsg('err','Connection error','Please check your connection and try again.');
       });
     });
 
-    new SurveyUI.Survey({model:survey, el:el});
+    // survey-react-ui UMD exposes SurveyReact globally
+    var root = ReactDOM.createRoot(el);
+    root.render(React.createElement(SurveyReact.Survey, { model: survey }));
   } catch(e){
-    showMsg('err','Survey error',e&&e.message?e.message:'Unknown error');
+    showMsg('err','Survey error',e&&e.message?e.message:String(e));
   }
 })();
 </script>
