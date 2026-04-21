@@ -56,6 +56,8 @@ type SurveyStyle = {
   cardBackgroundColor: string;
   questionTextColor: string;
   customCss: string;
+  redirectUrl: string;
+  redirectDelay: number;
 };
 
 const QTYPES: Array<{ v: QuestionType; l: string }> = [
@@ -93,6 +95,7 @@ const DEFAULT_SURVEY_JSON: SurveyJson = {
       ],
     },
   ],
+  showWelcomePage: false,
 };
 
 // -- Remote-DOM event helpers --------------------------------------------------
@@ -638,9 +641,19 @@ const WelcomeEditor = ({
           <input
             type="checkbox"
             checked={!!survey.showWelcomePage}
-            onChange={(ev) =>
-              onChange({ ...survey, showWelcomePage: getEvChecked(ev) })
-            }
+            onChange={(ev) => {
+              const checked = getEvChecked(ev);
+              onChange({
+                ...survey,
+                showWelcomePage: checked,
+                welcomePage: (checked && !survey.welcomePage)
+                  ? { 
+                      title: survey.title || 'Welcome', 
+                      description: 'Please take a moment to fill out this survey.' 
+                    }
+                  : survey.welcomePage
+              });
+            }}
             style={{ width: '15px', height: '15px', cursor: 'pointer' }}
           />
           Show Welcome Page
@@ -675,10 +688,14 @@ const WelcomeEditor = ({
 
 const CompletionEditor = ({
   survey,
-  onChange,
+  style,
+  onSurveyChange,
+  onStyleChange,
 }: {
   survey: SurveyJson;
-  onChange: (s: SurveyJson) => void;
+  style: SurveyStyle;
+  onSurveyChange: (s: SurveyJson) => void;
+  onStyleChange: (s: SurveyStyle) => void;
 }) => {
   return (
     <div style={S.qEditor}>
@@ -690,9 +707,32 @@ const CompletionEditor = ({
           value={survey.completedHtml ?? ''}
           placeholder="Thank you for your response!"
           onChange={(ev) =>
-            onChange({ ...survey, completedHtml: getEv(ev) })
+            onSurveyChange({ ...survey, completedHtml: getEv(ev) })
           }
         />
+      </div>
+
+      <div style={{ ...S.sectionHd, marginTop: '24px' }}>Auto-Redirect</div>
+      <div style={S.fg}>
+        <label style={S.label}>Redirect URL (Optional)</label>
+        <input
+          style={S.fi}
+          value={style.redirectUrl ?? ''}
+          placeholder="https://example.com/thanks"
+          onChange={(ev) => onStyleChange({ ...style, redirectUrl: getEv(ev) })}
+        />
+      </div>
+      <div style={S.fg}>
+        <label style={S.label}>Redirect Delay (Seconds)</label>
+        <input
+          type="number"
+          style={S.fi}
+          value={style.redirectDelay ?? 5}
+          onChange={(ev) => onStyleChange({ ...style, redirectDelay: parseInt(getEv(ev)) || 0 })}
+        />
+        <p style={{ fontSize: '12px', color: T.textTertiary, marginTop: '4px' }}>
+          Seconds to wait on the thank you page before redirecting.
+        </p>
       </div>
     </div>
   );
@@ -1168,6 +1208,8 @@ const SurveyBuilder = () => {
     cardBackgroundColor: '#ffffff',
     questionTextColor: '#0f172a',
     customCss: '',
+    redirectUrl: '',
+    redirectDelay: 5,
   });
 
   // Updated selection state
@@ -1211,19 +1253,27 @@ const SurveyBuilder = () => {
             cardBackgroundColor: true,
             questionTextColor: true,
             customCss: true,
+            redirectUrl: true,
+            redirectDelay: true,
           },
         } as never);
 
-        const surveyRecord = (result as { sm133788Survey?: { surveyJsJson?: string; primaryColor?: string; headerBackgroundColor?: string; headerTextColor?: string; backgroundColor?: string; cardBackgroundColor?: string; questionTextColor?: string; customCss?: string } })
+        const surveyRecord = (result as { sm133788Survey?: { surveyJsJson?: string; primaryColor?: string; headerBackgroundColor?: string; headerTextColor?: string; backgroundColor?: string; cardBackgroundColor?: string; questionTextColor?: string; customCss?: string; redirectUrl?: string; redirectDelay?: number } })
           ?.sm133788Survey;
         const raw = surveyRecord?.surveyJsJson;
 
         if (!cancelled) {
           if (raw) {
             try {
-              setSurvey(JSON.parse(raw) as SurveyJson);
-            } catch {
-              // malformed JSON — start fresh
+              const parsed = JSON.parse(raw);
+              if (parsed && typeof parsed === 'object') {
+                if (parsed.showWelcomePage === undefined) {
+                  parsed.showWelcomePage = false;
+                }
+                setSurvey(parsed as SurveyJson);
+              }
+            } catch (e) {
+              console.error('[SurveyBuilder] Failed to parse survey JSON:', e);
             }
           }
           if (surveyRecord) {
@@ -1237,6 +1287,8 @@ const SurveyBuilder = () => {
                 surveyRecord.cardBackgroundColor || '#ffffff',
               questionTextColor: surveyRecord.questionTextColor || '#0f172a',
               customCss: surveyRecord.customCss || '',
+              redirectUrl: surveyRecord.redirectUrl || '',
+              redirectDelay: surveyRecord.redirectDelay ?? 5,
             });
           }
           setLoading(false);
@@ -1279,6 +1331,8 @@ const SurveyBuilder = () => {
                 cardBackgroundColor: nextStyle.cardBackgroundColor,
                 questionTextColor: nextStyle.questionTextColor,
                 customCss: nextStyle.customCss,
+                redirectUrl: nextStyle.redirectUrl,
+                redirectDelay: nextStyle.redirectDelay,
               },
             },
             id: true,
@@ -1527,7 +1581,12 @@ const SurveyBuilder = () => {
               <WelcomeEditor survey={survey} onChange={updateSurvey} />
             )}
             {sel.type === 'completion' && (
-              <CompletionEditor survey={survey} onChange={updateSurvey} />
+              <CompletionEditor 
+                survey={survey} 
+                style={style}
+                onSurveyChange={updateSurvey}
+                onStyleChange={updateStyle}
+              />
             )}
             {sel.type === 'page' && (
               <PageEditor

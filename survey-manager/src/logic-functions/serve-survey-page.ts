@@ -31,6 +31,8 @@ export const handler = async (event: Record<string, any>) => {
           backgroundColor: true,
           cardBackgroundColor: true,
           questionTextColor: true,
+          redirectUrl: true,
+          redirectDelay: true,
         },
       } as never);
       survey = (result as any)?.sm133788Survey;
@@ -64,6 +66,8 @@ export const handler = async (event: Record<string, any>) => {
           backgroundColor: true,
           cardBackgroundColor: true,
           questionTextColor: true,
+          redirectUrl: true,
+          redirectDelay: true,
         },
       },
     } as never);
@@ -99,6 +103,8 @@ function renderSurvey(survey: any, token: string) {
   const safeJson = JSON.stringify(surveyJson).replace(/<\/script>/gi, '<\\/script>');
   const safeToken = JSON.stringify(token);
   const primaryColor = survey?.primaryColor || '#0070f3';
+  const redirectUrl = survey?.redirectUrl || '';
+  const redirectDelay = survey?.redirectDelay ?? 5;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -156,24 +162,42 @@ function renderSurvey(survey: any, token: string) {
     }
     
     /* Use user-defined colors for the SurveyJS V2 Modern theme elements */
-    .sd-root-modern {
+    .sd-root-modern, .sv-root-modern {
       background-color: ${survey?.backgroundColor || '#f0f4f8'} !important;
     }
-    .sd-element--with-frame {
+    .sd-element--with-frame, .sv-element--with-frame {
       background-color: ${survey?.cardBackgroundColor || '#ffffff'} !important;
       border-radius: var(--sjs-corner-radius) !important;
       box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.05) !important;
       margin-bottom: 24px !important;
     }
-    .sd-container-modern { padding: 0 !important; }
-    .sd-header, .sd-header__text, .sd-container-modern__header, .sd-container-modern__title { display: none !important; } /* Hide redundant SurveyJS header elements */
-    .sd-title { 
+    .sd-container-modern, .sv-container-modern { padding: 0 !important; }
+    .sd-header, .sd-header__text, .sd-container-modern__header,
+    .sv-header, .sv-header__text, .sv-container-modern__header,
+    .sv-header__title, .sv-header__description, .sv-logo,
+    .sv-action-bar, .sv-nav-bar, .sv-header-container, .sv-header__logo-container { 
+      display: none !important; 
+      height: 0 !important; 
+      padding: 0 !important; 
+      margin: 0 !important; 
+      opacity: 0 !important;
+      pointer-events: none !important;
+      background: transparent !important;
+    } /* Hide redundant SurveyJS header elements */
+    
+    /* Specifically hide the redundant survey title that causes the white bar */
+    .sv-title:empty, .sv-description:empty, .sv-container-modern__title:empty { display: none !important; }
+    .sv-header .sv-title, .sv-header .sv-description { display: none !important; }
+
+    .sv-root-modern { background-color: transparent !important; }
+    .sd-title, .sv-title { 
       font-weight:700!important; 
       color:${survey?.questionTextColor || '#0f172a'}!important; 
       font-size:24px!important; 
       margin-bottom: 24px !important;
     }
-    .sd-action-button--complete, .sd-action-button--next, .sd-action-button--prev, .sd-action-button--welcome { 
+    .sd-action-button--complete, .sd-action-button--next, .sd-action-button--prev, .sd-action-button--welcome,
+    .sv-action-button--complete, .sv-action-button--next, .sv-action-button--prev, .sv-action-button--welcome { 
       background-color:${primaryColor}!important; 
       border-radius:8px!important; 
       padding:12px 28px!important; 
@@ -184,29 +208,93 @@ function renderSurvey(survey: any, token: string) {
       cursor: pointer;
       font-size: 16px !important;
     }
-    .sd-action-button--prev {
+    .sd-action-button--prev, .sv-action-button--prev {
       background-color: #64748b !important;
       margin-right: 8px !important;
     }
     .sd-action-button--complete:hover, .sd-action-button--next:hover, .sd-action-button--welcome:hover { opacity: 0.9; }
     
     /* Ensure Welcome Page titles are visible */
-    .sd-welcome-page {
+    .sd-welcome-page, .sv-welcome-page {
       padding: 40px 0 !important;
       text-align: center;
     }
-    .sd-welcome-page__title {
+    .sd-welcome-page__title, .sv-welcome-page__title {
       font-size: 32px !important;
       font-weight: 800 !important;
       color: ${survey?.questionTextColor || '#0f172a'} !important;
       margin-bottom: 16px !important;
       display: block !important;
     }
-    .sd-welcome-page__description {
+    .sd-welcome-page__description, .sv-welcome-page__description {
       font-size: 18px !important;
       color: #64748b !important;
       line-height: 1.6;
     }
+
+    /* Custom Welcome Overlay */
+    #custom-welcome {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: ${survey?.backgroundColor || '#f0f4f8'};
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .welcome-card {
+      background: ${survey?.cardBackgroundColor || '#ffffff'};
+      padding: 60px 40px;
+      border-radius: 20px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    }
+    .welcome-card h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: ${survey?.questionTextColor || '#0f172a'};
+      margin-bottom: 20px;
+    }
+    .welcome-card p {
+      font-size: 18px;
+      color: #64748b;
+      margin-bottom: 40px;
+      line-height: 1.6;
+    }
+    .start-btn {
+      background-color: ${primaryColor};
+      color: #fff;
+      border: none;
+      padding: 16px 40px;
+      font-size: 18px;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .start-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+
+    /* Force EVERYTHING in the header to be transparent and hidden */
+    .sv-header, .sv-header-container, .sv-header__text, .sv-container-modern__header, 
+    .sv-header__title, .sv-header__description, .sv-logo, .sv-title-bar,
+    .sv-container-modern__title, .sv-container-modern__description {
+      background-color: transparent !important;
+      box-shadow: none !important;
+      display: none !important;
+      height: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      visibility: hidden !important;
+    }
+    
+    .sv-header .sv-title, .sv-header .sv-description { display: none !important; }
     
     .msg{
       padding:60px 40px;
@@ -227,7 +315,15 @@ function renderSurvey(survey: any, token: string) {
   <span>${escHtml(surveyName)}</span>
   ${token === 'PREVIEW_MODE' ? '<span class="preview-badge">Preview Mode</span>' : ''}
 </div>
-<div class="wrap" id="wrap">
+<div class="wrap" id="wrap" style="position: relative; min-height: 500px;">
+  <div id="custom-welcome" style="display: none;">
+    <div class="welcome-card">
+      <h1 id="welcome-title">Welcome</h1>
+      <p id="welcome-desc">Please take a moment to fill out this survey.</p>
+      <button class="start-btn" onclick="startSurvey()">Start Survey</button>
+    </div>
+  </div>
+
   <div id="surveyElement"></div>
 </div>
 
@@ -241,18 +337,57 @@ function renderSurvey(survey: any, token: string) {
   var json  = ${safeJson};
   var wrap  = document.getElementById('wrap');
   
-  function showMsg(title, body){
-    wrap.innerHTML='<div class="msg"><h2>'+title+'</h2><p>'+body+'</p></div>';
+  function showMsg(title, body, redirectInfo){
+    var html = '<div class="msg"><h2>'+title+'</h2><p>'+body+'</p>';
+    if (redirectInfo) {
+      html += '<p style="margin-top: 24px; font-size: 14px; opacity: 0.7;">' + redirectInfo + '</p>';
+    }
+    html += '</div>';
+    wrap.innerHTML = html;
   }
 
   try {
     // Crucial: SurveyJS V2 needs specific theme initialization
     if(typeof Survey !== 'undefined') {
-      if (Survey.StylesManager) {
-        Survey.StylesManager.applyTheme("defaultV2");
+      // Ensure the JSON has the flag before construction
+      if (json.showWelcomePage === true || json.showWelcomePage === 'true') {
+        json.showWelcomePage = true;
       }
-      
+
       var survey = new Survey.Model(json);
+      
+      // Force disable titles to prevent the "white bar"
+      survey.showTitle = false;
+      survey.showPageTitles = false;
+      survey.showQuestionNumbers = "off";
+
+      window.startSurvey = function() {
+        document.getElementById('custom-welcome').style.display = 'none';
+        // Delay render slightly so the browser can update the layout (fixes rating scale issues)
+        setTimeout(function(){
+          var el = document.getElementById("surveyElement");
+          survey.render(el);
+          survey.state = 'running';
+
+
+        }, 50);
+      };
+
+      // Force custom welcome if enabled
+      if (json.showWelcomePage) {
+        var wpTitle = (json.welcomePage && json.welcomePage.title) || json.title || "Welcome";
+        var wpDesc = (json.welcomePage && json.welcomePage.description) || "Please click below to start.";
+        
+        document.getElementById('welcome-title').innerText = wpTitle;
+        document.getElementById('welcome-desc').innerText = wpDesc;
+        document.getElementById('custom-welcome').style.display = 'flex';
+      } else {
+        // No welcome page, render immediately
+        var el = document.getElementById("surveyElement");
+        survey.render(el);
+      }
+
+
 
       survey.onComplete.add(function(sender){
         var successTitle = '✓ Thank you!';
@@ -265,7 +400,15 @@ function renderSurvey(survey: any, token: string) {
         }
 
         if (token === 'PREVIEW_MODE') {
-          showMsg('✓ Preview Complete', 'This was a test submission. All surveys work correctly. This response was not recorded.' + (json.completedHtml ? '<br><br><b>Your custom message:</b><br>' + json.completedHtml : ''));
+          var previewBody = 'This was a test submission. All surveys work correctly. This response was not recorded.' + (json.completedHtml ? '<br><br><b>Your custom message:</b><br>' + json.completedHtml : '');
+          var redirectUrl = ${JSON.stringify(redirectUrl)};
+          var redirectDelay = ${redirectDelay};
+          
+          if (redirectUrl) {
+            showMsg('✓ Preview Complete', previewBody, 'In a live survey, the user would be redirected to <b>' + redirectUrl + '</b> after ' + redirectDelay + ' seconds.');
+          } else {
+            showMsg('✓ Preview Complete', previewBody);
+          }
           return;
         }
         fetch('/s/submit-survey',{
@@ -274,18 +417,32 @@ function renderSurvey(survey: any, token: string) {
           body:JSON.stringify({token:token, answers:sender.data})
         }).then(function(r){
           return r.ok
-            ? showMsg(successTitle, successBody)
+            ? (function() {
+                var redirectUrl = ${JSON.stringify(redirectUrl)};
+                var redirectDelay = ${redirectDelay};
+                
+                if (redirectUrl) {
+                  var remaining = redirectDelay;
+                  var interval = setInterval(function() {
+                    remaining--;
+                    if (remaining <= 0) {
+                      clearInterval(interval);
+                      window.location.href = redirectUrl;
+                    } else {
+                      showMsg(successTitle, successBody, 'Redirecting in ' + remaining + ' seconds...');
+                    }
+                  }, 1000);
+                  showMsg(successTitle, successBody, 'Redirecting in ' + redirectDelay + ' seconds...');
+                } else {
+                  showMsg(successTitle, successBody);
+                }
+              })()
             : r.text().then(function(t){ showMsg('Submission failed', t || 'Please try again.'); });
         }).catch(function(){
           showMsg('Connection error','Please check your connection and try again.');
         });
       });
 
-      /* Ensure the welcome page title isn't removed */
-
-      // Render the survey to the element
-      var el = document.getElementById("surveyElement");
-      survey.render(el);
     } else {
       showMsg('Loading error', 'Survey library could not be loaded. Please refresh the page.');
     }

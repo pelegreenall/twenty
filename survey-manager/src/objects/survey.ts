@@ -12,6 +12,9 @@ export const SURVEY_CUSTOM_CSS_FIELD_ID = 'd7bcbea5-baad-400d-8000-000000000033'
 export const SURVEY_BG_COLOR_FIELD_ID = 'd7bcbea5-baad-400d-8000-000000000034';
 export const SURVEY_CARD_BG_COLOR_FIELD_ID = 'd7bcbea5-baad-400d-8000-000000000035';
 export const SURVEY_QUESTION_TEXT_COLOR_FIELD_ID = 'd7bcbea5-baad-400d-8000-000000000036';
+export const SURVEY_REDIRECT_URL_FIELD_ID = 'd7bcbea5-baad-400d-8000-000000000040';
+export const SURVEY_REDIRECT_DELAY_FIELD_ID = 'd7bcbea5-baad-400d-8000-000000000041';
+
 
 export default defineObject({
   universalIdentifier: 'd7bcbea5-baad-400d-8000-000000000010',
@@ -119,6 +122,21 @@ export default defineObject({
       label: 'Question Text Color',
       description: 'Text color for the survey questions',
       defaultValue: "'#0f172a'",
+    },
+    {
+      universalIdentifier: SURVEY_REDIRECT_URL_FIELD_ID,
+      type: FieldType.TEXT,
+      name: 'redirectUrl',
+      label: 'Redirect URL',
+      description: 'URL to redirect to after survey completion',
+    },
+    {
+      universalIdentifier: SURVEY_REDIRECT_DELAY_FIELD_ID,
+      type: FieldType.NUMBER,
+      name: 'redirectDelay',
+      label: 'Redirect Delay (seconds)',
+      description: 'How many seconds to wait before redirecting',
+      defaultValue: 5,
     }
   ],
 });
